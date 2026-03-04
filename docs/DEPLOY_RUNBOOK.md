@@ -36,6 +36,7 @@ Create dedicated signing assets for `no.snapstudy.play`:
    - `APP_STORE_CONNECT_PRIVATE_KEY`
    - `APPLE_TEAM_ID`
 4. Start workflow `ios-development`.
+5. Optional but recommended: verify PR checks using `ios-pr-check`.
 
 ## 5. Verify isolation
 

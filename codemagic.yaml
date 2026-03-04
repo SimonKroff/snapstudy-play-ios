@@ -1,4 +1,42 @@
 workflows:
+  ios-pr-check:
+    name: SnapStudy Play - PR Check
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+
+    environment:
+      vars:
+        XCODE_PROJECT: "SnapStudyPlay.xcodeproj"
+        XCODE_SCHEME: "SnapStudyPlay"
+      xcode: latest
+
+    triggering:
+      events:
+        - pull_request
+      branch_patterns:
+        - pattern: "*"
+          include: true
+
+    scripts:
+      - name: Install XcodeGen
+        script: |
+          brew install xcodegen
+
+      - name: Generate Xcode project
+        script: |
+          xcodegen generate --spec project.yml
+
+      - name: Run tests
+        script: |
+          xcodebuild test \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -derivedDataPath DerivedData
+
+    artifacts:
+      - DerivedData/Logs/Test/**/*.xcresult
+
   ios-development:
     name: SnapStudy Play - iOS Build
     max_build_duration: 60

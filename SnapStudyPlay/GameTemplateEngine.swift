@@ -4,31 +4,47 @@ struct GameTemplateEngine {
     func generate(from assignment: Assignment) -> GeneratedGame {
         switch assignment.type {
         case .math:
-            return GeneratedGame(
+            return buildGame(
                 engine: .mathDash,
                 title: "Math Dash",
-                payload: GamePayload(
-                    question: assignment.extractedQuestion,
-                    options: assignment.options,
-                    correctAnswer: assignment.answer
-                )
+                assignment: assignment
             )
         case .vocabulary:
-            return fallback(engine: .wordHunter, title: "Word Hunter")
+            return buildGame(
+                engine: .wordHunter,
+                title: "Word Hunter",
+                assignment: assignment
+            )
         case .story:
-            return fallback(engine: .storyEscape, title: "Story Escape")
+            return buildGame(
+                engine: .storyEscape,
+                title: "Story Escape",
+                assignment: assignment
+            )
         case .science:
-            return fallback(engine: .moleculeBuilder, title: "Molecule Builder")
+            return buildGame(
+                engine: .moleculeBuilder,
+                title: "Molecule Builder",
+                assignment: assignment
+            )
         case .unknown:
-            return fallback(engine: .wordHunter, title: "Adaptive Trainer")
+            return buildGame(
+                engine: .wordHunter,
+                title: "Adaptive Trainer",
+                assignment: assignment
+            )
         }
     }
 
-    private func fallback(engine: GameEngineType, title: String) -> GeneratedGame {
+    private func buildGame(engine: GameEngineType, title: String, assignment: Assignment) -> GeneratedGame {
         GeneratedGame(
             engine: engine,
             title: title,
-            payload: GamePayload(question: "Prototype", options: [1, 2, 3], correctAnswer: 1)
+            payload: GamePayload(
+                question: assignment.extractedQuestion,
+                options: assignment.options,
+                correctAnswer: assignment.answer
+            )
         )
     }
 }

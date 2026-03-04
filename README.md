@@ -7,11 +7,17 @@ Homework -> Game Engine for iOS, built with Apple on-device AI from day one.
 - OCR pipeline skeleton (`VisionOCRService`, Apple Vision)
 - Assignment analyzer (`AssignmentAnalyzer` + `AppleAssignmentClassifier`, Apple NaturalLanguage)
 - Game template engine (`GameTemplateEngine`)
-- First playable mini-game: `MathDashScene` (SpriteKit)
+- Playable mini-games: `MathDashScene`, `WordHunterScene`, `StoryEscapeScene`, `MoleculeBuilderScene` (SpriteKit)
 - Performance prototype: high score can unlock a fictional Steam discount card placeholder
 - XcodeGen setup via `project.yml`
 - Codemagic CI/TestFlight via `codemagic.yaml`
 - Isolation checklist for separate repo/app/cert setup
+
+## CI/CD (GitHub + Codemagic)
+
+- PRs in GitHub trigger `ios-pr-check` in Codemagic (generate project + run tests).
+- Push to `main` triggers `ios-development` in Codemagic (signed release build + TestFlight upload).
+- Keep all signing/API secrets only in Codemagic secure environment variables.
 
 ## Local run
 

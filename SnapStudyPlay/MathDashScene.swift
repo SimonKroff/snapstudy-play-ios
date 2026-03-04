@@ -4,15 +4,17 @@ final class MathDashScene: SKScene {
     private let question: String
     private let options: [Int]
     private let correctAnswer: Int
+    private let onScoreChanged: (Int) -> Void
 
     private let runner = SKSpriteNode(color: .systemBlue, size: CGSize(width: 34, height: 34))
     private let scoreLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
     private var score = 0
 
-    init(question: String, options: [Int], correctAnswer: Int) {
+    init(question: String, options: [Int], correctAnswer: Int, onScoreChanged: @escaping (Int) -> Void = { _ in }) {
         self.question = question
         self.options = options
         self.correctAnswer = correctAnswer
+        self.onScoreChanged = onScoreChanged
         super.init(size: CGSize(width: 700, height: 360))
         scaleMode = .resizeFill
     }
@@ -46,6 +48,7 @@ final class MathDashScene: SKScene {
         addChild(ground)
 
         spawnAnswerGates()
+        onScoreChanged(score)
     }
 
     private func spawnAnswerGates() {
@@ -88,6 +91,7 @@ final class MathDashScene: SKScene {
                 score = 0
                 scoreLabel.text = "Streak: 0"
             }
+            onScoreChanged(score)
         }
     }
 }

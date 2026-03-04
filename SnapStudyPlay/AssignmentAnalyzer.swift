@@ -50,13 +50,60 @@ struct AssignmentAnalyzer {
     private func fallbackPayload(for type: AssignmentType, text: String) -> (String, [Int], Int) {
         switch type {
         case .vocabulary:
-            return ("Find riktig oversettelse", [1, 2, 3], 1)
+            let prompt = extractVocabularyPrompt(from: text)
+            return (prompt, [1, 2, 3, 4], 1)
         case .story:
-            return ("Hvilken hendelse låser døren opp?", [1, 2, 3], 1)
+            return (extractStoryPrompt(from: text), [1, 2, 3], 1)
         case .science:
-            return ("Bygg korrekt molekylstruktur", [1, 2, 3], 1)
+            return (extractSciencePrompt(from: text), [1, 2, 3], 1)
         case .unknown, .math:
             return (text.isEmpty ? "Ukjent oppgave" : text, [1, 2, 3], 1)
         }
+    }
+
+    private func extractVocabularyPrompt(from text: String) -> String {
+        let lowered = text.lowercased()
+        let markers = ["translate", "oversett", "meaning of", "betyr", "define"]
+
+        for marker in markers {
+            guard let range = lowered.range(of: marker) else { continue }
+            let originalSlice = text[range.upperBound...]
+            let cleaned = originalSlice
+                .replacingOccurrences(of: ":", with: "")
+                .replacingOccurrences(of: "\"", with: "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if let firstWord = cleaned.split(whereSeparator: { $0.isWhitespace || $0.isPunctuation }).first,
+               firstWord.count >= 2 {
+                return "Finn riktig ord for: \(firstWord)"
+            }
+        }
+
+        return "Finn riktig oversettelse"
+    }
+
+    private func extractStoryPrompt(from text: String) -> String {
+        let lowered = text.lowercased()
+        if lowered.contains("chapter") || lowered.contains("kapittel") {
+            return "Velg hendelsen som passer best til kapitlet"
+        }
+        if lowered.contains("character") || lowered.contains("karakter") || lowered.contains("person") {
+            return "Hvilken handling passer hovedpersonen?"
+        }
+        return "Hvilken hendelse låser døren opp?"
+    }
+
+    private func extractSciencePrompt(from text: String) -> String {
+        let lowered = text.lowercased()
+        if lowered.contains("water") || lowered.contains("vann") {
+            return "Velg riktig molekylformel for vann"
+        }
+        if lowered.contains("oxygen") || lowered.contains("oksygen") {
+            return "Velg riktig molekylformel for oksygen"
+        }
+        if lowered.contains("co2") || lowered.contains("karbondioksid") {
+            return "Velg riktig molekylformel for karbondioksid"
+        }
+        return "Bygg korrekt molekylstruktur"
     }
 }

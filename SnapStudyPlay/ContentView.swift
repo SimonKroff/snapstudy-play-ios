@@ -5,7 +5,8 @@ struct ContentView: View {
     @State private var homeworkText = ""
     @State private var generatedGame: GeneratedGame?
     @State private var analyzedAssignment: Assignment?
-    @State private var prototypeScore: Double = 0
+    @State private var prototypeScore = 0
+    @State private var activeScene: SKScene?
 
     private let analyzer = AssignmentAnalyzer()
     private let engine = GameTemplateEngine()
@@ -28,8 +29,47 @@ struct ContentView: View {
 
                 Button("Generate Game") {
                     let assignment = analyzer.analyze(text: homeworkText)
+                    let game = engine.generate(from: assignment)
+
                     analyzedAssignment = assignment
-                    generatedGame = engine.generate(from: assignment)
+                    generatedGame = game
+                    prototypeScore = 0
+
+                    let scoreBinding = $prototypeScore
+                    let rawText = assignment.rawText.isEmpty ? game.payload.question : assignment.rawText
+                    let scoreUpdater: (Int) -> Void = { score in
+                        DispatchQueue.main.async {
+                            scoreBinding.wrappedValue = score
+                        }
+                    }
+
+                    switch game.engine {
+                    case .mathDash:
+                        activeScene = MathDashScene(
+                            question: game.payload.question,
+                            options: game.payload.options,
+                            correctAnswer: game.payload.correctAnswer,
+                            onScoreChanged: scoreUpdater
+                        )
+                    case .wordHunter:
+                        activeScene = WordHunterScene(
+                            prompt: game.payload.question,
+                            sourceText: rawText,
+                            onScoreChanged: scoreUpdater
+                        )
+                    case .storyEscape:
+                        activeScene = StoryEscapeScene(
+                            prompt: game.payload.question,
+                            sourceText: rawText,
+                            onScoreChanged: scoreUpdater
+                        )
+                    case .moleculeBuilder:
+                        activeScene = MoleculeBuilderScene(
+                            prompt: game.payload.question,
+                            sourceText: rawText,
+                            onScoreChanged: scoreUpdater
+                        )
+                    }
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(homeworkText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -46,8 +86,8 @@ struct ContentView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
-                    if game.engine == .mathDash {
-                        SpriteView(scene: MathDashScene(question: game.payload.question, options: game.payload.options, correctAnswer: game.payload.correctAnswer))
+                    if let scene = activeScene {
+                        SpriteView(scene: scene)
                             .frame(height: 320)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     } else {
@@ -58,13 +98,12 @@ struct ContentView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
 
-                    let reward = achievementEngine.evaluate(score: Int(prototypeScore))
+                    let reward = achievementEngine.evaluate(score: prototypeScore)
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Performance Prototype")
                             .font(.headline)
-                        Text("Simulert score: \(Int(prototypeScore))")
+                        Text("Live score: \(prototypeScore)")
                             .font(.subheadline)
-                        Slider(value: $prototypeScore, in: 0...30, step: 1)
 
                         Text(reward.title)
                             .font(.subheadline.bold())

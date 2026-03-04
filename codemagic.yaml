@@ -1,0 +1,67 @@
+workflows:
+  ios-development:
+    name: SnapStudy Play - iOS Build
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: no.snapstudy.play
+      vars:
+        XCODE_PROJECT: "SnapStudyPlay.xcodeproj"
+        XCODE_SCHEME: "SnapStudyPlay"
+        BUNDLE_ID: "no.snapstudy.play"
+      xcode: latest
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+
+    scripts:
+      - name: Install XcodeGen
+        script: |
+          brew install xcodegen
+
+      - name: Generate Xcode project
+        script: |
+          xcodegen generate --spec project.yml
+
+      - name: Set up code signing
+        script: |
+          keychain initialize
+
+      - name: Build iOS app
+        script: |
+          xcode-project use-profiles
+          xcodebuild \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath DerivedData \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM=$APPLE_TEAM_ID \
+            clean build
+
+      - name: Run tests
+        script: |
+          xcodebuild test \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -derivedDataPath DerivedData
+
+    artifacts:
+      - DerivedData/Build/Products/**/*.app
+      - DerivedData/Build/Products/**/*.ipa
+
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true

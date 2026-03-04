@@ -1,0 +1,68 @@
+name: SnapStudyPlay
+options:
+  bundleIdPrefix: no.snapstudy
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+  SnapStudyPlay:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: SnapStudyPlay
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: no.snapstudy.play
+        INFOPLIST_FILE: SnapStudyPlay/Info.plist
+        DEVELOPMENT_TEAM: $(APPLE_TEAM_ID)
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: ""
+        GENERATE_INFOPLIST_FILE: "NO"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    dependencies:
+      - sdk: SwiftUI.framework
+      - sdk: SpriteKit.framework
+      - sdk: Vision.framework
+      - sdk: NaturalLanguage.framework
+      - sdk: CoreML.framework
+
+  SnapStudyPlayTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: SnapStudyPlayTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: no.snapstudy.play.tests
+        DEVELOPMENT_TEAM: $(APPLE_TEAM_ID)
+    dependencies:
+      - target: SnapStudyPlay
+
+schemes:
+  SnapStudyPlay:
+    build:
+      targets:
+        SnapStudyPlay: all
+        SnapStudyPlayTests: testing
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - SnapStudyPlayTests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release

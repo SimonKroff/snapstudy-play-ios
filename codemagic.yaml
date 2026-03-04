@@ -43,9 +43,6 @@ workflows:
     instance_type: mac_mini_m2
 
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: no.snapstudy.play
       vars:
         XCODE_PROJECT: "SnapStudyPlay.xcodeproj"
         XCODE_SCHEME: "SnapStudyPlay"
@@ -70,11 +67,21 @@ workflows:
 
       - name: Set up code signing
         script: |
+          CERT_KEY_PATH="$CM_BUILD_DIR/codemagic_distribution.key"
+          openssl genrsa -out "$CERT_KEY_PATH" 2048
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --private-key "@env:APP_STORE_CONNECT_PRIVATE_KEY" \
+            --certificate-key "@file:$CERT_KEY_PATH"
           keychain initialize
+          keychain add-certificates
+          xcode-project use-profiles
 
       - name: Build iOS app
         script: |
-          xcode-project use-profiles
           xcodebuild \
             -project "$XCODE_PROJECT" \
             -scheme "$XCODE_SCHEME" \

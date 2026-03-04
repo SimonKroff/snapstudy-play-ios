@@ -88,7 +88,7 @@ workflows:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -derivedDataPath DerivedData \
-            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM=$APPLE_TEAM_ID \
             clean build
 

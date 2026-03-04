@@ -79,7 +79,7 @@ struct ContentView: View {
                         .font(.headline)
                     Text(game.title)
                         .foregroundStyle(.secondary)
-                    Text("AI: \(analyzedAssignment?.aiSource ?? \"Apple on-device\")")
+                    Text("AI: \(analyzedAssignment?.aiSource ?? "Apple on-device")")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text("Confidence: \(Int((analyzedAssignment?.classificationConfidence ?? 0) * 100))%")

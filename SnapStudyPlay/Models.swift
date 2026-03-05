@@ -118,7 +118,7 @@ struct GeneratedGame {
     let blueprint: GameBlueprint
 }
 
-struct LearnerProgress {
+struct LearnerProgress: Equatable {
     var sessionsCompleted: Int
     var streak: Int
     var mastery: [CompetencyGoal: Int]

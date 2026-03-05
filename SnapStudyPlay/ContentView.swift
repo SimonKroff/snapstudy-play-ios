@@ -21,6 +21,8 @@ struct ContentView: View {
     private let achievementEngine = AchievementEngine()
     private let progressionEngine = ProgressionEngine()
     private let ocrService = VisionOCRService()
+    private let progressStore = LearnerProgressStore()
+    private let analytics = AnalyticsTracker()
 
     var body: some View {
         NavigationStack {
@@ -75,6 +77,11 @@ struct ContentView: View {
                     generatedGame = game
                     prototypeScore = 0
                     learnerProgress = progressionEngine.startSession(current: learnerProgress)
+                    analytics.track("game_generated", metadata: [
+                        "engine": game.engine.rawValue,
+                        "subject": assignment.learningProfile.subject.rawValue,
+                        "confidence": String(format: "%.2f", assignment.classificationConfidence)
+                    ])
 
                     let scoreBinding = $prototypeScore
                     let rawText = assignment.rawText.isEmpty ? game.payload.question : assignment.rawText
@@ -82,6 +89,10 @@ struct ContentView: View {
                         DispatchQueue.main.async {
                             scoreBinding.wrappedValue = score
                             learnerProgress = progressionEngine.observeScore(current: learnerProgress, score: score, assignment: assignment)
+                            analytics.track("score_updated", metadata: [
+                                "engine": game.engine.rawValue,
+                                "score": String(score)
+                            ])
                         }
                     }
 
@@ -198,6 +209,12 @@ struct ContentView: View {
         .task(id: selectedPhotoItem) {
             await extractTextFromSelectedPhoto()
         }
+        .onAppear {
+            learnerProgress = progressStore.load()
+        }
+        .onChange(of: learnerProgress) { _, newValue in
+            progressStore.save(newValue)
+        }
         .onChange(of: capturedImage) { _, newImage in
             guard let newImage else { return }
             Task {
@@ -226,6 +243,7 @@ struct ContentView: View {
                 await MainActor.run {
                     ocrStatusMessage = "Kunne ikke lese valgt bilde."
                 }
+                analytics.track("ocr_invalid_image")
                 return
             }
 
@@ -234,6 +252,7 @@ struct ContentView: View {
             await MainActor.run {
                 ocrStatusMessage = "OCR feilet: \(error.localizedDescription)"
             }
+            analytics.track("ocr_failed", metadata: ["error": error.localizedDescription])
         }
     }
 
@@ -242,15 +261,20 @@ struct ContentView: View {
             isExtractingText = true
             ocrStatusMessage = "Analyserer bilde med Vision OCR..."
         }
+        analytics.track("ocr_started")
 
         let extractedText = await runOCR(on: image)
         await MainActor.run {
             isExtractingText = false
             if extractedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 ocrStatusMessage = "Fant ingen tekst i bildet."
+                analytics.track("ocr_empty")
             } else {
                 homeworkText = extractedText
                 ocrStatusMessage = "OCR ferdig. \(extractedText.count) tegn hentet."
+                analytics.track("ocr_completed", metadata: [
+                    "chars": String(extractedText.count)
+                ])
             }
         }
     }

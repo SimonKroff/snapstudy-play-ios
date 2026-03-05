@@ -4,7 +4,7 @@ struct GameTemplateEngine {
     private let registry = EngineRegistry()
 
     func generate(from assignment: Assignment, progress: LearnerProgress = .initial) -> GeneratedGame {
-        let selectedEngine = registry.selectEngine(for: assignment)
+        let selectedEngine = selectEngineWithFallback(for: assignment)
         let spec = registry.spec(for: selectedEngine)
         let blueprint = registry.buildBlueprint(for: assignment, progress: progress, engine: selectedEngine)
         let payload = buildPayload(for: assignment, engine: selectedEngine, blueprint: blueprint)
@@ -19,6 +19,20 @@ struct GameTemplateEngine {
 
     func engineCount() -> Int {
         registry.specs.count
+    }
+
+    private func selectEngineWithFallback(for assignment: Assignment) -> GameEngineType {
+        let selected = registry.selectEngine(for: assignment)
+        guard assignment.classificationConfidence < 0.30 else { return selected }
+
+        switch assignment.learningProfile.subject {
+        case .math:
+            return .mathDash
+        case .science:
+            return .moleculeBuilder
+        case .language, .socialStudies, .mixed:
+            return .wordHunter
+        }
     }
 
     private func buildPayload(for assignment: Assignment, engine: GameEngineType, blueprint: GameBlueprint) -> GamePayload {

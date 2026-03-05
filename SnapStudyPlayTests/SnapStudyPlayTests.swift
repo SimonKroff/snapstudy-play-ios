@@ -105,4 +105,47 @@ final class SnapStudyPlayTests: XCTestCase {
         XCTAssertGreaterThan(updated.streak, 0)
         XCTAssertFalse(updated.mastery.isEmpty)
     }
+
+    func testLowConfidenceFallsBackToStableEngine() {
+        let engine = GameTemplateEngine()
+        let assignment = Assignment(
+            type: .unknown,
+            rawText: "random short text",
+            extractedQuestion: "Ukjent oppgave",
+            options: [1, 2, 3],
+            answer: 1,
+            aiSource: "test",
+            classificationConfidence: 0.1,
+            intelligenceSignals: [],
+            learningProfile: LearningProfile(
+                subject: .mixed,
+                competencies: [.readingComprehension],
+                gradeBand: .grade4to6,
+                difficulty: .intro
+            )
+        )
+
+        let game = engine.generate(from: assignment, progress: .initial)
+        XCTAssertEqual(game.engine, .wordHunter)
+    }
+
+    func testLearnerProgressStoreRoundtrip() {
+        let suiteName = "SnapStudyPlayTests.ProgressStore"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        let store = LearnerProgressStore(defaults: defaults)
+
+        let original = LearnerProgress(
+            sessionsCompleted: 4,
+            streak: 2,
+            mastery: [.arithmeticFluency: 55, .translation: 20]
+        )
+        store.save(original)
+        let restored = store.load()
+
+        XCTAssertEqual(restored.sessionsCompleted, 4)
+        XCTAssertEqual(restored.streak, 2)
+        XCTAssertEqual(restored.mastery[.arithmeticFluency], 55)
+        XCTAssertEqual(restored.mastery[.translation], 20)
+    }
 }

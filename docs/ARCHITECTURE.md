@@ -9,6 +9,8 @@
 - `EngineRegistry`: catalog of engine capabilities + template schema per engine.
 - `GameTemplateEngine`: maps assignment into one of 10 engines and generates `GameBlueprint`.
 - `ProgressionEngine`: computes recommended difficulty and tracks mastery progression.
+- `LearnerProgressStore`: persists progression state between app launches.
+- `AnalyticsTracker`: local event stream for OCR/game generation telemetry.
 - `GameRuntime`: receives `GeneratedGame` and launches SpriteKit/SwiftUI gameplay.
 
 ## Assignment types

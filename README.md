@@ -9,6 +9,8 @@ Homework -> Game Engine for iOS, built with Apple on-device AI from day one.
 - Assignment analyzer (`AssignmentAnalyzer` + `AppleAssignmentClassifier`, Apple NaturalLanguage hybrid: keywords + lemmas + embeddings + entity tags)
 - `EngineRegistry` + `GameBlueprint` architecture with template schema and auto-parameter generation
 - Progression system (`ProgressionEngine`) for sessions, streak, and competency mastery
+- Persistent learner progress (`LearnerProgressStore`, UserDefaults)
+- Lightweight analytics/event tracker (`AnalyticsTracker`) for OCR/game telemetry
 - Game template engine (`GameTemplateEngine`) routing across 10 engines
 - Playable mini-games (10 engines): `MathDash`, `EquationBuilder`, `FractionForge`, `WordHunter`, `SynonymSprint`, `GrammarGate`, `StoryEscape`, `TimelineQuest`, `MoleculeBuilder`, `EcosystemBalance`
 - Performance prototype: high score can unlock a fictional Steam discount card placeholder

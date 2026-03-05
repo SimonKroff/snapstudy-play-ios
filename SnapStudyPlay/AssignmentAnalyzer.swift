@@ -14,7 +14,13 @@ struct AssignmentAnalyzer {
                 answer: math.answer,
                 aiSource: "Apple Vision + heuristic math parser",
                 classificationConfidence: 0.99,
-                intelligenceSignals: ["type=math", "path=deterministic-arithmetic"]
+                intelligenceSignals: ["type=math", "path=deterministic-arithmetic"],
+                learningProfile: LearningProfile(
+                    subject: .math,
+                    competencies: inferMathCompetencies(from: trimmed),
+                    gradeBand: estimateGradeBand(from: trimmed),
+                    difficulty: .core
+                )
             )
         }
 
@@ -28,7 +34,13 @@ struct AssignmentAnalyzer {
             answer: answer,
             aiSource: cls.source,
             classificationConfidence: cls.confidence,
-            intelligenceSignals: cls.signals
+            intelligenceSignals: cls.signals,
+            learningProfile: LearningProfile(
+                subject: cls.subject,
+                competencies: cls.competencies,
+                gradeBand: cls.estimatedGrade,
+                difficulty: difficultyFromConfidence(cls.confidence)
+            )
         )
     }
 
@@ -80,6 +92,31 @@ struct AssignmentAnalyzer {
             options.append(answer + options.count)
         }
         return options.shuffled()
+    }
+
+    private func inferMathCompetencies(from text: String) -> [CompetencyGoal] {
+        if text.contains("/") || text.lowercased().contains("fraction") || text.lowercased().contains("brøk") {
+            return [.fractionSense, .equationReasoning]
+        }
+        return [.arithmeticFluency, .equationReasoning]
+    }
+
+    private func estimateGradeBand(from text: String) -> GradeBand {
+        let numbers = text.compactMap { $0.wholeNumberValue }
+        if numbers.contains(where: { $0 <= 4 }) {
+            return .grade1to3
+        }
+        if numbers.contains(where: { $0 <= 7 }) {
+            return .grade4to6
+        }
+        return .grade7to9
+    }
+
+    private func difficultyFromConfidence(_ confidence: Double) -> DifficultyTier {
+        if confidence < 0.35 { return .intro }
+        if confidence < 0.55 { return .core }
+        if confidence < 0.75 { return .advanced }
+        return .challenge
     }
 
     private func fallbackPayload(for type: AssignmentType, text: String) -> (String, [Int], Int) {

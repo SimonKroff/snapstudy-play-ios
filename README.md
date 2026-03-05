@@ -7,8 +7,10 @@ Homework -> Game Engine for iOS, built with Apple on-device AI from day one.
 - OCR pipeline skeleton (`VisionOCRService`, Apple Vision)
 - UI flow for OCR from selected photo/camera (`PhotosPicker`/camera -> `VisionOCRService`)
 - Assignment analyzer (`AssignmentAnalyzer` + `AppleAssignmentClassifier`, Apple NaturalLanguage hybrid: keywords + lemmas + embeddings + entity tags)
-- Game template engine (`GameTemplateEngine`)
-- Playable mini-games: `MathDashScene`, `WordHunterScene`, `StoryEscapeScene`, `MoleculeBuilderScene` (SpriteKit)
+- `EngineRegistry` + `GameBlueprint` architecture with template schema and auto-parameter generation
+- Progression system (`ProgressionEngine`) for sessions, streak, and competency mastery
+- Game template engine (`GameTemplateEngine`) routing across 10 engines
+- Playable mini-games (10 engines): `MathDash`, `EquationBuilder`, `FractionForge`, `WordHunter`, `SynonymSprint`, `GrammarGate`, `StoryEscape`, `TimelineQuest`, `MoleculeBuilder`, `EcosystemBalance`
 - Performance prototype: high score can unlock a fictional Steam discount card placeholder
 - XcodeGen setup via `project.yml`
 - Codemagic CI/TestFlight via `codemagic.yaml`

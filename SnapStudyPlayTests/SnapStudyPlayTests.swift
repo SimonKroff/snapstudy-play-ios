@@ -47,8 +47,8 @@ final class SnapStudyPlayTests: XCTestCase {
         let game = engine.generate(from: assignment)
 
         XCTAssertEqual(assignment.type, .vocabulary)
-        XCTAssertEqual(game.engine, .wordHunter)
-        XCTAssertEqual(game.payload.question, "Finn riktig ord for: curious")
+        XCTAssertTrue([.wordHunter, .synonymSprint, .grammarGate].contains(game.engine))
+        XCTAssertFalse(game.payload.question.isEmpty)
         XCTAssertFalse(assignment.intelligenceSignals.isEmpty)
     }
 
@@ -59,7 +59,7 @@ final class SnapStudyPlayTests: XCTestCase {
         let game = engine.generate(from: assignment)
 
         XCTAssertEqual(assignment.type, .story)
-        XCTAssertEqual(game.engine, .storyEscape)
+        XCTAssertTrue([.storyEscape, .timelineQuest, .grammarGate].contains(game.engine))
         XCTAssertFalse(game.payload.question.isEmpty)
         XCTAssertTrue(assignment.aiSource.contains("Apple"))
     }
@@ -71,8 +71,38 @@ final class SnapStudyPlayTests: XCTestCase {
         let game = engine.generate(from: assignment)
 
         XCTAssertEqual(assignment.type, .science)
-        XCTAssertEqual(game.engine, .moleculeBuilder)
-        XCTAssertEqual(game.payload.question, "Velg riktig molekylformel for vann")
+        XCTAssertTrue([.moleculeBuilder, .ecosystemBalance].contains(game.engine))
+        XCTAssertFalse(game.payload.question.isEmpty)
         XCTAssertGreaterThan(assignment.classificationConfidence, 0.25)
+    }
+
+    func testEngineRegistryProvidesTenEngines() {
+        let engine = GameTemplateEngine()
+        XCTAssertEqual(engine.engineCount(), 10)
+    }
+
+    func testGeneratedGameContainsBlueprint() {
+        let analyzer = AssignmentAnalyzer()
+        let engine = GameTemplateEngine()
+        let assignment = analyzer.analyze(text: "7 x 9 = ?")
+        let game = engine.generate(from: assignment)
+
+        XCTAssertFalse(game.blueprint.templateId.isEmpty)
+        XCTAssertGreaterThan(game.blueprint.rounds, 0)
+        XCTAssertGreaterThan(game.blueprint.timeLimitSeconds, 0)
+    }
+
+    func testProgressionEngineSessionAndMasteryUpdate() {
+        let analyzer = AssignmentAnalyzer()
+        let progression = ProgressionEngine()
+        let assignment = analyzer.analyze(text: "8 + 5 = ?")
+
+        var progress = LearnerProgress.initial
+        progress = progression.startSession(current: progress)
+        XCTAssertEqual(progress.sessionsCompleted, 1)
+
+        let updated = progression.observeScore(current: progress, score: 5, assignment: assignment)
+        XCTAssertGreaterThan(updated.streak, 0)
+        XCTAssertFalse(updated.mastery.isEmpty)
     }
 }

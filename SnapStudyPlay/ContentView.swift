@@ -9,6 +9,7 @@ struct ContentView: View {
     @State private var analyzedAssignment: Assignment?
     @State private var prototypeScore = 0
     @State private var activeScene: SKScene?
+    @State private var learnerProgress = LearnerProgress.initial
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var isExtractingText = false
     @State private var ocrStatusMessage: String?
@@ -18,6 +19,7 @@ struct ContentView: View {
     private let analyzer = AssignmentAnalyzer()
     private let engine = GameTemplateEngine()
     private let achievementEngine = AchievementEngine()
+    private let progressionEngine = ProgressionEngine()
     private let ocrService = VisionOCRService()
 
     var body: some View {
@@ -67,17 +69,19 @@ struct ContentView: View {
 
                 Button("Generate Game") {
                     let assignment = analyzer.analyze(text: homeworkText)
-                    let game = engine.generate(from: assignment)
+                    let game = engine.generate(from: assignment, progress: learnerProgress)
 
                     analyzedAssignment = assignment
                     generatedGame = game
                     prototypeScore = 0
+                    learnerProgress = progressionEngine.startSession(current: learnerProgress)
 
                     let scoreBinding = $prototypeScore
                     let rawText = assignment.rawText.isEmpty ? game.payload.question : assignment.rawText
                     let scoreUpdater: (Int) -> Void = { score in
                         DispatchQueue.main.async {
                             scoreBinding.wrappedValue = score
+                            learnerProgress = progressionEngine.observeScore(current: learnerProgress, score: score, assignment: assignment)
                         }
                     }
 
@@ -107,6 +111,15 @@ struct ContentView: View {
                             sourceText: rawText,
                             onScoreChanged: scoreUpdater
                         )
+                    case .equationBuilder, .fractionForge, .synonymSprint, .grammarGate, .timelineQuest, .ecosystemBalance:
+                        let textOptions = game.payload.textOptions.isEmpty ? ["A", "B", "C", "D"] : game.payload.textOptions
+                        let correctText = game.payload.correctText ?? textOptions.first ?? "A"
+                        activeScene = TemplateArenaScene(
+                            prompt: game.payload.question,
+                            options: textOptions,
+                            correct: correctText,
+                            onScoreChanged: scoreUpdater
+                        )
                     }
                 }
                 .buttonStyle(.borderedProminent)
@@ -123,8 +136,18 @@ struct ContentView: View {
                     Text("Confidence: \(Int((analyzedAssignment?.classificationConfidence ?? 0) * 100))%")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    if let profile = analyzedAssignment?.learningProfile {
+                        Text("Subject: \(profile.subject.rawValue) | Grade: \(profile.gradeBand.rawValue) | Difficulty: \(profile.difficulty.rawValue)")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                     if let signals = analyzedAssignment?.intelligenceSignals, !signals.isEmpty {
                         Text("Signals: \(signals.joined(separator: " | "))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    if let blueprint = generatedGame?.blueprint {
+                        Text("Blueprint: \(blueprint.templateId) | rounds=\(blueprint.rounds) | time=\(blueprint.timeLimitSeconds)s")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -147,6 +170,9 @@ struct ContentView: View {
                             .font(.headline)
                         Text("Live score: \(prototypeScore)")
                             .font(.subheadline)
+                        Text("Sessions: \(learnerProgress.sessionsCompleted) | Streak: \(learnerProgress.streak)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
 
                         Text(reward.title)
                             .font(.subheadline.bold())

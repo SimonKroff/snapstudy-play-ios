@@ -6,6 +6,9 @@ struct AssignmentClassification {
     let confidence: Double
     let source: String
     let signals: [String]
+    let subject: SubjectDomain
+    let competencies: [CompetencyGoal]
+    let estimatedGrade: GradeBand
 }
 
 struct AppleAssignmentClassifier {
@@ -68,7 +71,10 @@ struct AppleAssignmentClassifier {
                 type: .unknown,
                 confidence: 0.0,
                 source: "Apple NL hybrid classifier",
-                signals: []
+                signals: [],
+                subject: .mixed,
+                competencies: [.readingComprehension],
+                estimatedGrade: .grade4to6
             )
         }
 
@@ -80,15 +86,25 @@ struct AppleAssignmentClassifier {
                 type: .unknown,
                 confidence: confidence,
                 source: "Apple NL hybrid classifier (low confidence)",
-                signals: buildSignals(type: .unknown, language: detectedLanguage, entities: entitySignals, confidence: confidence)
+                signals: buildSignals(type: .unknown, language: detectedLanguage, entities: entitySignals, confidence: confidence),
+                subject: .mixed,
+                competencies: [.readingComprehension],
+                estimatedGrade: estimateGradeBand(text: text)
             )
         }
+
+        let subject = inferSubject(for: winner.0)
+        let competencies = inferCompetencies(for: winner.0, text: text)
+        let grade = estimateGradeBand(text: text)
 
         return AssignmentClassification(
             type: winner.0,
             confidence: confidence,
             source: "Apple NL hybrid classifier (keywords + lemmas + embeddings + entities)",
-            signals: buildSignals(type: winner.0, language: detectedLanguage, entities: entitySignals, confidence: confidence)
+            signals: buildSignals(type: winner.0, language: detectedLanguage, entities: entitySignals, confidence: confidence),
+            subject: subject,
+            competencies: competencies,
+            estimatedGrade: grade
         )
     }
 
@@ -234,5 +250,70 @@ struct AppleAssignmentClassifier {
         values.append("confidence=\(Int(confidence * 100))%")
         values.append("entities:p\(entities.personCount)/o\(entities.organizationCount)/l\(entities.placeCount)")
         return values
+    }
+
+    private func inferSubject(for type: AssignmentType) -> SubjectDomain {
+        switch type {
+        case .math:
+            return .math
+        case .vocabulary, .story:
+            return .language
+        case .science:
+            return .science
+        case .unknown:
+            return .mixed
+        }
+    }
+
+    private func inferCompetencies(for type: AssignmentType, text: String) -> [CompetencyGoal] {
+        let lowered = text.lowercased()
+        switch type {
+        case .math:
+            if lowered.contains("/") || lowered.contains("fraction") || lowered.contains("brøk") {
+                return [.fractionSense, .equationReasoning]
+            }
+            return [.arithmeticFluency, .equationReasoning]
+        case .vocabulary:
+            if lowered.contains("synonym") || lowered.contains("antonym") {
+                return [.vocabularyDepth]
+            }
+            return [.translation, .vocabularyDepth]
+        case .story:
+            if lowered.contains("history") || lowered.contains("timeline") || lowered.contains("årstall") {
+                return [.timelineReasoning, .readingComprehension]
+            }
+            return [.readingComprehension, .grammarControl]
+        case .science:
+            if lowered.contains("ecosystem") || lowered.contains("økosystem") {
+                return [.ecosystemReasoning, .scientificModeling]
+            }
+            return [.scientificModeling]
+        case .unknown:
+            return [.readingComprehension]
+        }
+    }
+
+    private func estimateGradeBand(text: String) -> GradeBand {
+        let words = text
+            .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
+            .map(String.init)
+        let wordCount = words.count
+        let avgWordLength: Double
+        if words.isEmpty {
+            avgWordLength = 0
+        } else {
+            avgWordLength = Double(words.map(\.count).reduce(0, +)) / Double(words.count)
+        }
+
+        if wordCount < 10 && avgWordLength < 5 {
+            return .grade1to3
+        }
+        if wordCount < 30 && avgWordLength < 6 {
+            return .grade4to6
+        }
+        if wordCount < 70 {
+            return .grade7to9
+        }
+        return .grade10to12
     }
 }

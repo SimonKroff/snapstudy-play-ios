@@ -14,3 +14,4 @@ Use this list for a clean isolated product setup.
 6. Confirm workflow signs only `no.snapstudy.play`.
 7. Set branch protection and deploy from `main` only.
 8. Verify TestFlight uploads appear on the new app entry, not existing apps.
+9. Run `./scripts/verify_isolation.sh` before each release/build trigger.

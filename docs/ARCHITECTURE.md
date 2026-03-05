@@ -4,6 +4,7 @@
 
 - `VisionOCRService`: OCR from camera image using Apple Vision.
 - `AppleAssignmentClassifier`: assignment-type classification using Apple NaturalLanguage.
+  - Hybrid signals: token overlap, lemma overlap, sentence embeddings, and named-entity hints.
 - `AssignmentAnalyzer`: combines parser + classifier and extracts challenge data.
 - `GameTemplateEngine`: maps assignment into one of a small set of game engines.
 - `GameRuntime`: receives `GeneratedGame` and launches SpriteKit/SwiftUI gameplay.

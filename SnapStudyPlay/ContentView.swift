@@ -1,5 +1,7 @@
 import SwiftUI
 import SpriteKit
+import PhotosUI
+import UIKit
 
 struct ContentView: View {
     @State private var homeworkText = ""
@@ -7,10 +9,16 @@ struct ContentView: View {
     @State private var analyzedAssignment: Assignment?
     @State private var prototypeScore = 0
     @State private var activeScene: SKScene?
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var isExtractingText = false
+    @State private var ocrStatusMessage: String?
+    @State private var isShowingCamera = false
+    @State private var capturedImage: UIImage?
 
     private let analyzer = AssignmentAnalyzer()
     private let engine = GameTemplateEngine()
     private let achievementEngine = AchievementEngine()
+    private let ocrService = VisionOCRService()
 
     var body: some View {
         NavigationStack {
@@ -26,6 +34,36 @@ struct ContentView: View {
                     .frame(minHeight: 180)
                     .padding(8)
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(.gray.opacity(0.35), lineWidth: 1))
+
+                HStack(spacing: 12) {
+                    PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                        Label(isExtractingText ? "Leser bilde..." : "Velg Bilde (OCR)", systemImage: "photo.on.rectangle")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(isExtractingText)
+
+                    Button {
+                        isShowingCamera = true
+                    } label: {
+                        Label("Ta Bilde", systemImage: "camera")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(isExtractingText || !UIImagePickerController.isSourceTypeAvailable(.camera))
+
+                    Button("Tøm") {
+                        homeworkText = ""
+                        ocrStatusMessage = nil
+                    }
+                    .buttonStyle(.bordered)
+                }
+
+                if let ocrStatusMessage {
+                    Text(ocrStatusMessage)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
 
                 Button("Generate Game") {
                     let assignment = analyzer.analyze(text: homeworkText)
@@ -72,7 +110,7 @@ struct ContentView: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(homeworkText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(homeworkText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isExtractingText)
 
                 if let game = generatedGame {
                     Text("Engine: \(game.engine.rawValue)")
@@ -85,6 +123,11 @@ struct ContentView: View {
                     Text("Confidence: \(Int((analyzedAssignment?.classificationConfidence ?? 0) * 100))%")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    if let signals = analyzedAssignment?.intelligenceSignals, !signals.isEmpty {
+                        Text("Signals: \(signals.joined(separator: " | "))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
 
                     if let scene = activeScene {
                         SpriteView(scene: scene)
@@ -125,6 +168,64 @@ struct ContentView: View {
             }
             .padding()
             .navigationTitle("Homework -> Game")
+        }
+        .task(id: selectedPhotoItem) {
+            await extractTextFromSelectedPhoto()
+        }
+        .onChange(of: capturedImage) { _, newImage in
+            guard let newImage else { return }
+            Task {
+                await extractText(from: newImage)
+            }
+        }
+        .sheet(isPresented: $isShowingCamera) {
+            CameraImagePicker(image: $capturedImage)
+        }
+    }
+
+    private func runOCR(on image: UIImage) async -> String {
+        await withCheckedContinuation { continuation in
+            ocrService.extractText(from: image) { text in
+                continuation.resume(returning: text)
+            }
+        }
+    }
+
+    private func extractTextFromSelectedPhoto() async {
+        guard let item = selectedPhotoItem else { return }
+
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self),
+                  let image = UIImage(data: data) else {
+                await MainActor.run {
+                    ocrStatusMessage = "Kunne ikke lese valgt bilde."
+                }
+                return
+            }
+
+            await extractText(from: image)
+        } catch {
+            await MainActor.run {
+                ocrStatusMessage = "OCR feilet: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    private func extractText(from image: UIImage) async {
+        await MainActor.run {
+            isExtractingText = true
+            ocrStatusMessage = "Analyserer bilde med Vision OCR..."
+        }
+
+        let extractedText = await runOCR(on: image)
+        await MainActor.run {
+            isExtractingText = false
+            if extractedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                ocrStatusMessage = "Fant ingen tekst i bildet."
+            } else {
+                homeworkText = extractedText
+                ocrStatusMessage = "OCR ferdig. \(extractedText.count) tegn hentet."
+            }
         }
     }
 }

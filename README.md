@@ -5,7 +5,8 @@ Homework -> Game Engine for iOS, built with Apple on-device AI from day one.
 ## What is included
 
 - OCR pipeline skeleton (`VisionOCRService`, Apple Vision)
-- Assignment analyzer (`AssignmentAnalyzer` + `AppleAssignmentClassifier`, Apple NaturalLanguage)
+- UI flow for OCR from selected photo/camera (`PhotosPicker`/camera -> `VisionOCRService`)
+- Assignment analyzer (`AssignmentAnalyzer` + `AppleAssignmentClassifier`, Apple NaturalLanguage hybrid: keywords + lemmas + embeddings + entity tags)
 - Game template engine (`GameTemplateEngine`)
 - Playable mini-games: `MathDashScene`, `WordHunterScene`, `StoryEscapeScene`, `MoleculeBuilderScene` (SpriteKit)
 - Performance prototype: high score can unlock a fictional Steam discount card placeholder

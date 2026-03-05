@@ -5,7 +5,7 @@ struct AssignmentAnalyzer {
 
     func analyze(text: String) -> Assignment {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let math = parseSimpleMultiplication(trimmed) {
+        if let math = parseSimpleArithmetic(trimmed) {
             return Assignment(
                 type: .math,
                 rawText: trimmed,
@@ -13,7 +13,8 @@ struct AssignmentAnalyzer {
                 options: math.options,
                 answer: math.answer,
                 aiSource: "Apple Vision + heuristic math parser",
-                classificationConfidence: 0.99
+                classificationConfidence: 0.99,
+                intelligenceSignals: ["type=math", "path=deterministic-arithmetic"]
             )
         }
 
@@ -26,25 +27,59 @@ struct AssignmentAnalyzer {
             options: options,
             answer: answer,
             aiSource: cls.source,
-            classificationConfidence: cls.confidence
+            classificationConfidence: cls.confidence,
+            intelligenceSignals: cls.signals
         )
     }
 
-    private func parseSimpleMultiplication(_ text: String) -> (question: String, options: [Int], answer: Int)? {
-        let pattern = #"(\d+)\s*[x\*]\s*(\d+)"#
+    private func parseSimpleArithmetic(_ text: String) -> (question: String, options: [Int], answer: Int)? {
+        let pattern = #"(\d+)\s*([+\-x\*/])\s*(\d+)"#
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
         let range = NSRange(location: 0, length: text.utf16.count)
         guard let match = regex.firstMatch(in: text, options: [], range: range),
               let lhsRange = Range(match.range(at: 1), in: text),
-              let rhsRange = Range(match.range(at: 2), in: text),
+              let opRange = Range(match.range(at: 2), in: text),
+              let rhsRange = Range(match.range(at: 3), in: text),
               let lhs = Int(text[lhsRange]),
               let rhs = Int(text[rhsRange]) else {
             return nil
         }
 
-        let answer = lhs * rhs
-        let options = [answer - 2, answer, answer + 3].shuffled()
-        return ("\(lhs) x \(rhs) = ?", options, answer)
+        let op = String(text[opRange])
+        let normalizedOp = op == "*" ? "x" : op
+
+        let answer: Int
+        switch normalizedOp {
+        case "+":
+            answer = lhs + rhs
+        case "-":
+            answer = lhs - rhs
+        case "x":
+            answer = lhs * rhs
+        case "/":
+            guard rhs != 0, lhs % rhs == 0 else { return nil }
+            answer = lhs / rhs
+        default:
+            return nil
+        }
+
+        return ("\(lhs) \(normalizedOp) \(rhs) = ?", buildMathOptions(answer: answer), answer)
+    }
+
+    private func buildMathOptions(answer: Int) -> [Int] {
+        let offsets = [-3, -2, -1, 1, 2, 3, 4, -4]
+        var options = [answer]
+        for offset in offsets {
+            let candidate = answer + offset
+            if candidate >= 0, !options.contains(candidate) {
+                options.append(candidate)
+            }
+            if options.count == 3 { break }
+        }
+        while options.count < 3 {
+            options.append(answer + options.count)
+        }
+        return options.shuffled()
     }
 
     private func fallbackPayload(for type: AssignmentType, text: String) -> (String, [Int], Int) {

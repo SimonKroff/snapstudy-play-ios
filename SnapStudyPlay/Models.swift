@@ -16,6 +16,7 @@ struct Assignment {
     let answer: Int
     let aiSource: String
     let classificationConfidence: Double
+    let intelligenceSignals: [String]
 }
 
 enum GameEngineType: String {

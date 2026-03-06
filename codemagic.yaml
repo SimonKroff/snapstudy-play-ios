@@ -43,6 +43,8 @@ workflows:
     instance_type: mac_mini_m2
 
     environment:
+      groups:
+        - snapstudy_appstoreconnect
       vars:
         XCODE_PROJECT: "SnapStudyPlay.xcodeproj"
         XCODE_SCHEME: "SnapStudyPlay"

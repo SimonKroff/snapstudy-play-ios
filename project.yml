@@ -44,6 +44,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: no.snapstudy.play.tests
         DEVELOPMENT_TEAM: $(APPLE_TEAM_ID)
+        GENERATE_INFOPLIST_FILE: "YES"
     dependencies:
       - target: SnapStudyPlay
 

@@ -81,7 +81,7 @@ struct AppleAssignmentClassifier {
         let margin = winner.1 - (sorted.dropFirst().first?.1 ?? 0)
         let confidence = clamp((winner.1 * 0.8) + (margin * 0.2), min: 0, max: 1)
 
-        if confidence < 0.28 {
+        if confidence < 0.20 {
             return AssignmentClassification(
                 type: .unknown,
                 confidence: confidence,
@@ -234,7 +234,8 @@ struct AppleAssignmentClassifier {
     private func overlapScore(tokens: Set<String>, keywords: Set<String>) -> Double {
         guard !keywords.isEmpty else { return 0 }
         let hits = tokens.intersection(keywords).count
-        return Double(hits) / Double(keywords.count)
+        // Saturate quickly on direct keyword hits so short assignments are still classifiable.
+        return clamp(Double(hits) / 2.0, min: 0, max: 1)
     }
 
     private func clamp(_ value: Double, min: Double, max: Double) -> Double {

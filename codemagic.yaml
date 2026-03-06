@@ -79,15 +79,13 @@ workflows:
 
       - name: Set up code signing
         script: |
-          CERT_KEY_PATH="$CM_BUILD_DIR/codemagic_distribution.key"
-          openssl genrsa -out "$CERT_KEY_PATH" 2048
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
             --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
             --private-key "@env:APP_STORE_CONNECT_PRIVATE_KEY" \
-            --certificate-key "@file:$CERT_KEY_PATH"
+            --certificate-key "@env:CM_DISTRIBUTION_CERT_PRIVATE_KEY"
           keychain initialize
           keychain add-certificates
           xcode-project use-profiles

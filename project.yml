@@ -23,8 +23,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: no.snapstudy.play
         INFOPLIST_FILE: SnapStudyPlay/Info.plist
-        DEVELOPMENT_TEAM: $(APPLE_TEAM_ID)
-        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: KP9A8SK2G9
+        CODE_SIGN_STYLE: Manual
         GENERATE_INFOPLIST_FILE: "NO"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     dependencies:

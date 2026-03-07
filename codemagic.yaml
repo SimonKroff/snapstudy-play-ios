@@ -34,16 +34,6 @@ workflows:
             -destination 'platform=iOS Simulator,name=iPhone 17' \
             -derivedDataPath DerivedData
 
-      - name: Publish to TestFlight
-        script: |
-          app-store-connect publish \
-            --path "build/ios/ipa/*.ipa" \
-            --testflight \
-            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
-            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            --private-key "@env:APP_STORE_CONNECT_PRIVATE_KEY" \
-            --verbose
-
     artifacts:
       - DerivedData/Logs/Test/**/*.xcresult
 
@@ -104,6 +94,16 @@ workflows:
             -scheme "$XCODE_SCHEME" \
             -destination 'platform=iOS Simulator,name=iPhone 17' \
             -derivedDataPath DerivedData
+
+      - name: Publish to TestFlight
+        script: |
+          app-store-connect publish \
+            --path "build/ios/ipa/*.ipa" \
+            --testflight \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --private-key "@env:APP_STORE_CONNECT_PRIVATE_KEY" \
+            --verbose
 
     artifacts:
       - build/ios/ipa/*.ipa
